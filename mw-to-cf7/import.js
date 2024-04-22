@@ -67,3 +67,4 @@ function MwToCf7Import() {
       fileReader.readAsText(event.target.files[0]);
   };
 }
+MwToCf7Import();
