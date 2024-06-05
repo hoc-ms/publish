@@ -48,19 +48,35 @@ function mwToCf7Export() {
   // MW WP Formの要素からコードを取得
   var mwFormCode = mwFormElement.value;
 
+  // Validations配列を作成
+  var validations = [];
+  var i = 0;
+  while (true) {
+    var targetElement = document.querySelector('input[name="mw-wp-form[validation][' + i + '][target]"]');
+    var noemptyElement = document.querySelector('input[name="mw-wp-form[validation][' + i + '][noempty]"]');
+    var requiredElement = document.querySelector('input[name="mw-wp-form[validation][' + i + '][required]"]');
+    if (!targetElement) break;
+    validations.push({
+      target: targetElement.value,
+      noempty: noemptyElement ? noemptyElement.checked : false,
+      required: requiredElement ? requiredElement.checked : false
+    });
+    i++;
+  }
+
   // パターンリスト
   var patterns = [
     {
-      regex: /\[mwform_(text|tel|email|textarea|select|checkbox|number|radio|zip|datepicker) name="([^"]*)"(.*?)( id="([^"]*)")?(.*?)( class="([^"]*)")?(.*?)( min="([^"]*)")?(.*?)( max="([^"]*)")?(.*?)( step="([^"]*)")?(.*?)( placeholder="([^"]*)")?(.*?)( children="([^"]*?)")?(.*?)\]/,
+      regex: /\[mwform_(textarea|tel|email|text|select|checkbox|number|radio|zip|datepicker)([\s\S]*?)( name="([^"]*)")?([\s\S]*?)( id="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( min="([^"]*)")?([\s\S]*?)( max="([^"]*)")?([\s\S]*?)( step="([^"]*)")?([\s\S]*?)( placeholder="([^"]*)")?([\s\S]*?)( children="([^"]*?)")?([\s\S]*?)\]/,
       process: function (elementDetails) {
         var formType = elementDetails[1];
-        var formName = elementDetails[2];
-        var formId = elementDetails[5] || '';
-        var formClasses = elementDetails[8] ? elementDetails[8].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
-        var formMin = elementDetails[11] ? ' min:' + elementDetails[11] : '';
-        var formMax = elementDetails[14] ? ' max:' + elementDetails[14] : '';
-        var formPlaceholder = elementDetails[20] || '';
-        var formChildren = elementDetails[23] ? elementDetails[23].split(',').map(function (child) {
+        var formName = elementDetails[4] || '';
+        var formId = elementDetails[7] || '';
+        var formClasses = elementDetails[10] ? elementDetails[10].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
+        var formMin = elementDetails[13] ? ' min:' + elementDetails[13] : '';
+        var formMax = elementDetails[16] ? ' max:' + elementDetails[16] : '';
+        var formPlaceholder = elementDetails[22] || '';
+        var formChildren = elementDetails[25] ? elementDetails[25].split(',').map(function (child) {
           var childParts = child.split(':');
           return '"' + (childParts.length > 1 ? childParts[1] : childParts[0]) + '"';
         }).join(' ') : '';
@@ -75,16 +91,24 @@ function mwToCf7Export() {
         }
         var cf7FieldCode = '[' + cf7FieldType + ' ' + formName + formMin + formMax + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formType === 'checkbox' ? ' use_label_element' : '') + (formChildren ? ' ' + formChildren : '') + ']';
 
+        // Validations配列をチェックし、必要なら'*'を追加
+        for (var i = 0; i < validations.length; i++) {
+          if (validations[i].target === formName && (validations[i].noempty || validations[i].required)) {
+            cf7FieldCode = '<td>[' + cf7FieldType + '* ' + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']</td>';
+            break;
+          }
+        }
+
         return cf7FieldCode;
       }
     },
     {
-      regex: /\[mwform_(file|image) name="([^"]*)"(.*?)( id="([^"]*)")?(.*?)( class="([^"]*)")?(.*?)( show_error="([^"]*)")?(.*?)\]/,
+      regex: /\[mwform_(file|image)([\s\S]*?)( name="([^"]*)")([\s\S]*?)( id="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( show_error="([^"]*)")?([\s\S]*?)\]/,
       process: function (elementDetails) {
         var formType = elementDetails[1];
-        var formName = elementDetails[2];
-        var formId = elementDetails[5] || '';
-        var formClasses = elementDetails[8] ? elementDetails[8].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
+        var formName = elementDetails[4] || '';
+        var formId = elementDetails[7] || '';
+        var formClasses = elementDetails[10] ? elementDetails[10].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
 
         // MW WP Formの記法をContact Form 7の記法に変換
         var cf7FieldCode = '';
@@ -94,11 +118,19 @@ function mwToCf7Export() {
           cf7FieldCode = '[file ' + formName + ' limit:5mb' + ' filetypes:jpg|png|gif]';
         }
 
+        // Validations配列をチェックし、必要なら'*'を追加
+        for (var i = 0; i < validations.length; i++) {
+          if (validations[i].target === formName && (validations[i].noempty || validations[i].required)) {
+            cf7FieldCode = '<td>[' + cf7FieldType + '* ' + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']</td>';
+            break;
+          }
+        }
+
         return cf7FieldCode;
       }
     },
     {
-      regex: /\[mwform_(bconfirm|bsubmit)(.*?)( name="([^"]*)")?(.*?)( class="([^"]*)")?(.*?)( value="([^"]*)")?(.*?)\](.*?)\[\/mwform_(bconfirm|bsubmit)\]/,
+      regex: /\[mwform_(bconfirm|bsubmit)([\s\S]*?)( name="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( value="([^"]*)")?([\s\S]*?)\]([\s\S]*?)\[\/mwform_(bconfirm|bsubmit)\]/,
       process: function (elementDetails) {
         var formClasses = elementDetails[7] ? elementDetails[7].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
 
@@ -109,7 +141,7 @@ function mwToCf7Export() {
       }
     },
     {
-      regex: /\[mwform_(confirmButton|submitButton|submit|bconfirm|bsubmit)(.*?)( name="([^"]*)")?(.*?)( class="([^"]*)")?(.*?)( value="([^"]*)")?(.*?)\]/,
+      regex: /\[mwform_(confirmButton|submitButton|submit|bconfirm|bsubmit)([\s\S]*?)( name="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( value="([^"]*)")?([\s\S]*?)\]/,
       process: function (elementDetails) {
         var formClasses = elementDetails[7] ? elementDetails[7].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
 
@@ -141,18 +173,80 @@ function mwToCf7Export() {
     }
   });
 
-
   // reCAPTCHA要素を削除
-  convertedCode = convertedCode.replace(/\[(mwform_hidden|mwform_error) .*\]\n/g, '');
+  convertedCode = convertedCode.replace(/\[(mwform_hidden|mwform_error) [\s\S]*\]\n/g, '');
 
   // 各値と変換したコードをJSON形式で保存
   function replaceBracketsInString(str) {
     return str.replace(/{/g, '[').replace(/}/g, ']');
   }
 
+  // 日本語を検出する関数
+  function isJapanese(text) {
+    var japaneseRegex = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}\u3041-\u3096\u30A0-\u30FF\uFF66-\uFF9F\u4E00-\u9FAF]/u;
+    return japaneseRegex.test(text);
+  }
+
+  // 日本語とIDの対応を保持するマップ
+  const japaneseToIdMap = new Map();
+
+  // 一意の英数字を生成する関数
+  function generateUniqueId() {
+    return 'mw_' + Math.random().toString(36).substring(2, 8);
+  }
+
+  // 日本語部分を一意の英数字に置換する関数
+  function replaceJapaneseInBrackets(str) {
+    return str.replace(/(\[[^\]]*?\])|(\{[^}]*?\})/g, function (match, p1, p2) {
+      var target = p1 || p2;
+      var bracketType = p1 ? 'square' : 'curly';
+      var textToCheck = target.slice(1, -1);
+
+      if (bracketType === 'square') {
+        var parts = textToCheck.split(' ');
+        if (parts.length > 1) {
+          var firstSpaceIndex = textToCheck.indexOf(' ');
+          var beforeFirstSpace = textToCheck.slice(0, firstSpaceIndex);
+          var afterFirstSpace = textToCheck.slice(firstSpaceIndex + 1);
+
+          var secondSpaceIndex = afterFirstSpace.indexOf(' ');
+          var endIndex = secondSpaceIndex !== -1 ? secondSpaceIndex : afterFirstSpace.length;
+
+          var japanesePart = afterFirstSpace.slice(0, endIndex);
+          var remainingPart = afterFirstSpace.slice(endIndex);
+
+          if (isJapanese(japanesePart)) {
+            if (!japaneseToIdMap.has(japanesePart)) {
+              japaneseToIdMap.set(japanesePart, generateUniqueId());
+            }
+            return `[${beforeFirstSpace} ${japaneseToIdMap.get(japanesePart)}${remainingPart}]`;
+          }
+        }
+      } else if (bracketType === 'curly') {
+        if (isJapanese(textToCheck)) {
+          if (!japaneseToIdMap.has(textToCheck)) {
+            japaneseToIdMap.set(textToCheck, generateUniqueId());
+          }
+          return `{${japaneseToIdMap.get(textToCheck)}}`;
+        }
+      }
+      return match;
+    });
+  }
+
+  // オブジェクトの各キーと値を走査し、値が文字列であればreplaceJapaneseInBrackets関数を適用し、値がオブジェクトであれば再帰的にreplaceBracketsInObject関数を適用する関数
   function replaceBracketsInObject(obj) {
     return Object.entries(obj).reduce((newObj, [key, value]) => {
-      newObj[key] = replaceBracketsInString(value);
+      if (typeof value === 'string') {
+        // まず日本語部分を置換
+        value = replaceJapaneseInBrackets(value);
+        // 次にブレースを角括弧に置換
+        newObj[key] = replaceBracketsInString(value);
+      } else if (typeof value === 'object' && value !== null) {
+        newObj[key] = replaceBracketsInObject(value);
+      } else {
+        newObj[key] = value;
+      }
       return newObj;
     }, {});
   }
@@ -165,7 +259,7 @@ function mwToCf7Export() {
       }
     },
     {
-      'adminMail': replaceBracketsInObject({
+      'adminMail': {
         'mailToValue': mailToValue,
         'mailCcValue': mailCcValue,
         'mailBccValue': mailBccValue,
@@ -175,17 +269,17 @@ function mwToCf7Export() {
         'adminMailContent': adminMailContent,
         'mailReturnPath': mailReturnPath,
         'adminMailFrom': adminMailFrom,
-      })
+      }
     },
     {
-      'mail': replaceBracketsInObject({
+      'mail': {
         'mailSubject': mailSubject,
         'mailSender': mailSender,
         'mailReplyTo': mailReplyTo,
         'mailContent': mailContent,
         'automaticReplyEmail': automaticReplyEmail,
         'mailFrom': mailFrom,
-      })
+      }
     },
     {
       'otherSettings': {
@@ -195,6 +289,8 @@ function mwToCf7Export() {
     }
   ];
 
+  // convertedDataの各要素に対してreplaceBracketsInObject関数を適用
+  convertedData = convertedData.map(replaceBracketsInObject);
 
   // JSON形式のデータをBlob形式に変換
   var dataBlob = new Blob([JSON.stringify(convertedData, null, '    ')], { type: 'application/json' });
