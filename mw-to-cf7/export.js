@@ -34,7 +34,7 @@ function mwToCf7Export() {
   var mailContentElement = document.querySelector('textarea[name="mw-wp-form[mail_content]"]');
   var mailContent = mailContentElement ? mailContentElement.value : '';
   var automaticReplyEmailElement = document.querySelector('input[name="mw-wp-form[automatic_reply_email]"]');
-  var automaticReplyEmail = automaticReplyEmailElement ? "[" + automaticReplyEmailElement.value + "]" : '';
+  var automaticReplyEmail = automaticReplyEmailElement ? "{" + automaticReplyEmailElement.value + "}" : '';
   var mailFromElement = document.querySelector('input[name="mw-wp-form[mail_from]"]');
   var mailFrom = mailFromElement ? mailFromElement.value : '';
   var completeMessageElement = document.querySelector('textarea[name="mw-wp-form[complete_message]"]');
@@ -67,7 +67,7 @@ function mwToCf7Export() {
   // パターンリスト
   var patterns = [
     {
-      regex: /\[mwform_(textarea|tel|email|text|select|checkbox|number|radio|zip|datepicker)([\s\S]*?)( name="([^"]*)")?([\s\S]*?)( id="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( min="([^"]*)")?([\s\S]*?)( max="([^"]*)")?([\s\S]*?)( step="([^"]*)")?([\s\S]*?)( placeholder="([^"]*)")?([\s\S]*?)( children="([^"]*?)")?([\s\S]*?)\]/,
+      regex: /\[mwform_(textarea|tel|url|email|text|select|checkbox|number|radio|zip|datepicker)([\n\s\S]*?)(\s*name="([^"]*)")?([\n\s\S]*?)(\s*id="([^"]*)")?([\n\s\S]*?)(\s*class="([^"]*)")?([\n\s\S]*?)(\s*min="([^"]*)")?([\n\s\S]*?)(\s*max="([^"]*)")?([\n\s\S]*?)(\s*step="([^"]*)")?([\n\s\S]*?)(\s*placeholder="([^"]*)")?([\n\s\S]*?)(\s*children="([^"]*?)")?([\n\s\S]*?)\]/,
       process: function (elementDetails) {
         var formType = elementDetails[1];
         var formName = elementDetails[4] || '';
@@ -94,7 +94,8 @@ function mwToCf7Export() {
         // Validations配列をチェックし、必要なら'*'を追加
         for (var i = 0; i < validations.length; i++) {
           if (validations[i].target === formName && (validations[i].noempty || validations[i].required)) {
-            cf7FieldCode = '<td>[' + cf7FieldType + '* ' + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']</td>';
+            var cf7FieldTypeSuffix = cf7FieldType === 'radio' ? ' ' : '* ';
+            cf7FieldCode = '[' + cf7FieldType + cf7FieldTypeSuffix + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']';
             break;
           }
         }
@@ -103,7 +104,7 @@ function mwToCf7Export() {
       }
     },
     {
-      regex: /\[mwform_(file|image)([\s\S]*?)( name="([^"]*)")([\s\S]*?)( id="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( show_error="([^"]*)")?([\s\S]*?)\]/,
+      regex: /\[mwform_(file|image)([\n\s\S]*?)(\s*name="([^"]*)")([\n\s\S]*?)(\s*id="([^"]*)")?([\n\s\S]*?)(\s*class="([^"]*)")?([\n\s\S]*?)(\s*show_error="([^"]*)")?([\n\s\S]*?)\]/,
       process: function (elementDetails) {
         var formType = elementDetails[1];
         var formName = elementDetails[4] || '';
@@ -121,7 +122,7 @@ function mwToCf7Export() {
         // Validations配列をチェックし、必要なら'*'を追加
         for (var i = 0; i < validations.length; i++) {
           if (validations[i].target === formName && (validations[i].noempty || validations[i].required)) {
-            cf7FieldCode = '<td>[' + cf7FieldType + '* ' + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']</td>';
+            cf7FieldCode = '[' + cf7FieldType + '* ' + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']';
             break;
           }
         }
@@ -130,23 +131,23 @@ function mwToCf7Export() {
       }
     },
     {
-      regex: /\[mwform_(bconfirm|bsubmit)([\s\S]*?)( name="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( value="([^"]*)")?([\s\S]*?)\]([\s\S]*?)\[\/mwform_(bconfirm|bsubmit)\]/,
+      regex: /\[mwform_(bconfirm|bsubmit)([\n\s\S]*?)(\s*name="([^"]*)")?([\n\s\S]*?)(\s*class="([^"]*)")?([\n\s\S]*?)(\s*value="([^"]*)")?([\n\s\S]*?)\]([\n\s\S]*?)\[\/mwform_(bconfirm|bsubmit)\]/,
       process: function (elementDetails) {
         var formClasses = elementDetails[7] ? elementDetails[7].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
 
         // MW WP Formの記法をContact Form 7の記法に変換
-        var cf7FieldCode = '[submit ' + formClasses + ' "送信"]';
+        var cf7FieldCode = '[submit' + (formClasses || '') + ' "送信"]';
 
         return cf7FieldCode;
       }
     },
     {
-      regex: /\[mwform_(confirmButton|submitButton|submit|bconfirm|bsubmit)([\s\S]*?)( name="([^"]*)")?([\s\S]*?)( class="([^"]*)")?([\s\S]*?)( value="([^"]*)")?([\s\S]*?)\]/,
+      regex: /\[mwform_(confirmButton|submitButton|submit|bconfirm|bsubmit)([\n\s\S]*?)(\s*name="([^"]*)")?([\n\s\S]*?)(\s*class="([^"]*)")?([\n\s\S]*?)(\s*value="([^"]*)")?([\n\s\S]*?)\]/,
       process: function (elementDetails) {
         var formClasses = elementDetails[7] ? elementDetails[7].split(' ').map(function (className) { return 'class:' + className; }).join(' ') : '';
 
-        // MW WP Formの記法を指定された記法に変換
-        var newFieldCode = '[submit ' + formClasses + ' "送信"]';
+        // MW WP Formの記法をContact Form 7の記法に変換
+        var newFieldCode = '[submit' + (formClasses ? ' ' + formClasses : '') + ' "送信"]';
 
         return newFieldCode;
       }
@@ -156,7 +157,7 @@ function mwToCf7Export() {
   // 各パターンに対して処理を行う
   var convertedCode = mwFormCode;
   patterns.forEach(function (pattern) {
-    var patternGlobal = new RegExp(pattern.regex.source, 'g');
+    var patternGlobal = new RegExp(pattern.regex.source, 'gs');
     var mwFormMatches = mwFormCode.match(patternGlobal);
 
     // 抽出した要素が存在する場合の処理
@@ -189,10 +190,11 @@ function mwToCf7Export() {
 
   // 日本語とIDの対応を保持するマップ
   const japaneseToIdMap = new Map();
+  const japaneseToFormTypeMap = new Map();
 
   // 一意の英数字を生成する関数
   function generateUniqueId() {
-    return 'mw_' + Math.random().toString(36).substring(2, 8);
+    return Math.random().toString(36).substring(2, 8);
   }
 
   // 日本語部分を一意の英数字に置換する関数
@@ -216,16 +218,28 @@ function mwToCf7Export() {
           var remainingPart = afterFirstSpace.slice(endIndex);
 
           if (isJapanese(japanesePart)) {
+            var formType = beforeFirstSpace.replace('*', '');
+            if (!japaneseToFormTypeMap.has(japanesePart)) {
+              japaneseToFormTypeMap.set(japanesePart, formType);
+            }
+            var formTypePrefix = japaneseToFormTypeMap.get(japanesePart) + '_';
             if (!japaneseToIdMap.has(japanesePart)) {
-              japaneseToIdMap.set(japanesePart, generateUniqueId());
+              japaneseToIdMap.set(japanesePart, formTypePrefix + generateUniqueId());
             }
             return `[${beforeFirstSpace} ${japaneseToIdMap.get(japanesePart)}${remainingPart}]`;
           }
         }
       } else if (bracketType === 'curly') {
         if (isJapanese(textToCheck)) {
-          if (!japaneseToIdMap.has(textToCheck)) {
-            japaneseToIdMap.set(textToCheck, generateUniqueId());
+          if (japaneseToFormTypeMap.has(textToCheck)) {
+            var formTypePrefix = japaneseToFormTypeMap.get(textToCheck) + '_';
+            if (!japaneseToIdMap.has(textToCheck)) {
+              japaneseToIdMap.set(textToCheck, formTypePrefix + generateUniqueId());
+            }
+          } else {
+            if (!japaneseToIdMap.has(textToCheck)) {
+              japaneseToIdMap.set(textToCheck, generateUniqueId());
+            }
           }
           return `{${japaneseToIdMap.get(textToCheck)}}`;
         }
