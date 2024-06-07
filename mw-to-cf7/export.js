@@ -89,16 +89,19 @@ function mwToCf7Export() {
         else if (formType === 'datepicker') {
           cf7FieldType = 'date';
         }
-        var cf7FieldCode = '[' + cf7FieldType + ' ' + formName + formMin + formMax + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (['checkbox', 'radio'].includes(formType) ? ' use_label_element' : '') + (formChildren ? ' ' + formChildren : '') + ']';
 
-        // Validations配列をチェックし、必要なら'*'を追加
+        // Validations配列をチェックし、必須なら'*'を追加
+        var addStar = false;
         for (var i = 0; i < validations.length; i++) {
           if (validations[i].target === formName && (validations[i].noempty || validations[i].required)) {
-            var cf7FieldTypeSuffix = cf7FieldType === 'radio' ? ' ' : '* ';
-            cf7FieldCode = '[' + cf7FieldType + cf7FieldTypeSuffix + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']';
+            addStar = true;
             break;
           }
         }
+
+        // cf7FieldCodeにContact Form 7用のフォームタグを定義
+        var cf7FieldTypeSuffix = (cf7FieldType !== 'radio' && addStar) ? '* ' : ' ';
+        var cf7FieldCode = '[' + cf7FieldType + cf7FieldTypeSuffix + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (['checkbox', 'radio'].includes(cf7FieldType) ? ' use_label_element' : '') + (formChildren ? ' ' + formChildren : '') + ']';
 
         return cf7FieldCode;
       }
@@ -119,7 +122,7 @@ function mwToCf7Export() {
           cf7FieldCode = '[file ' + formName + ' limit:5mb' + ' filetypes:jpg|png|gif]';
         }
 
-        // Validations配列をチェックし、必要なら'*'を追加
+        // Validations配列をチェックし、必須なら'*'を追加
         for (var i = 0; i < validations.length; i++) {
           if (validations[i].target === formName && (validations[i].noempty || validations[i].required)) {
             cf7FieldCode = '[' + cf7FieldType + '* ' + formName + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formChildren ? ' ' + formChildren : '') + ']';
@@ -194,7 +197,7 @@ function mwToCf7Export() {
 
   // 一意の英数字を生成する関数
   function generateUniqueId() {
-    return Math.random().toString(36).substring(2, 6);
+    return Math.random().toString(36).substring(2, 7);
   }
 
   // 日本語部分を一意の英数字に置換する関数
