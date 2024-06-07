@@ -89,7 +89,7 @@ function mwToCf7Export() {
         else if (formType === 'datepicker') {
           cf7FieldType = 'date';
         }
-        var cf7FieldCode = '[' + cf7FieldType + ' ' + formName + formMin + formMax + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (formType === 'checkbox' ? ' use_label_element' : '') + (formChildren ? ' ' + formChildren : '') + ']';
+        var cf7FieldCode = '[' + cf7FieldType + ' ' + formName + formMin + formMax + (formId ? ' id:' + formId : '') + (formClasses ? ' ' + formClasses : '') + (formPlaceholder ? ' placeholder "' + formPlaceholder + '"' : '') + (['checkbox', 'radio'].includes(formType) ? ' use_label_element' : '') + (formChildren ? ' ' + formChildren : '') + ']';
 
         // Validations配列をチェックし、必要なら'*'を追加
         for (var i = 0; i < validations.length; i++) {
@@ -175,7 +175,7 @@ function mwToCf7Export() {
   });
 
   // reCAPTCHA要素を削除
-  convertedCode = convertedCode.replace(/\[(mwform_hidden|mwform_error) [\s\S]*\]\n/g, '');
+  convertedCode = convertedCode.replace(/\[(mwform_hidden|mwform_error) [\s\S]*?\]/g, '');
 
   // 各値と変換したコードをJSON形式で保存
   function replaceBracketsInString(str) {
@@ -194,7 +194,7 @@ function mwToCf7Export() {
 
   // 一意の英数字を生成する関数
   function generateUniqueId() {
-    return Math.random().toString(36).substring(2, 8);
+    return Math.random().toString(36).substring(2, 6);
   }
 
   // 日本語部分を一意の英数字に置換する関数
